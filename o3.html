@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>オセロゲーム</title>
+  <style>
+    .board {
+      display: grid;
+      grid-template-columns: repeat(8, 50px);
+      grid-template-rows: repeat(8, 50px);
+    }
+
+    .cell {
+      border: 1px solid #333;
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: green;
+    }
+
+    .stone {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+    }
+
+    #turn {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+
+    #result {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    
+    .hint {
+      background-color: blue;
+      opacity: 0.5;
+    }
+  </style>
+</head>
+<body>
+  <h1>オセロゲーム</h1>
+  <div class="board" id="board"></div>
+  <div id="turn"></div>
+  <div id="result"></div>
+  <button onclick="showHint()">ヒント</button>
+  <script>
+    const boardArray = new Array(8).fill().map(() => new Array(8).fill(0));
+    let currentPlayer = 1;
+
+    // 初期のオセロの配置
+    boardArray[3][3] = 2;
+    boardArray[3][4] = 1;
+    boardArray[4][3] = 1;
+    boardArray[4][4] = 2;
+
+    // ゲームの盤面を更新します
+    function updateBoard() {
+      const board = document.getElementById("board");
+      board.innerHTML = "";
+
+      for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+          const cell = document.createElement("div");
+          cell.classList.add("cell");
+          cell.addEventListener("click", () => cellClick(row, col));
+
+          // 石を丸で表現
+          if (boardArray[row][col] === 1 || boardArray[row][col] === 2) {
+            const stone = document.createElement("div");
+            stone.classList.add("stone");
+            stone.style.backgroundColor = boardArray[row][col] === 1 ? "black" : "white";
+            cell.appendChild(stone);
+          }
+
+          board.appendChild(cell);
+        }
+      }
+    }
+
+    // ゲームの盤面を初期表示します
+    updateBoard();
+
+    // ゲームの盤面を更新します
+    function cellClick(row, col) {
+      if (boardArray[row][col] === 0) {
+        if (isValidMove(row, col)) {
+          placeStone(row, col);
+          flipStones(row, col);
+          currentPlayer = 3 - currentPlayer;
+          updateBoard();
+          updateTurnText();
+        
+         if (isSkipTurn()) {
+        currentPlayer = 3 - currentPlayer;
+        updateTurnText();
+          
+          if (isGameFinished()) {
+            showResult();
+          }
+         }
+        } else {
+          alert("無効な手です。");
+        }
+      } else {
+        alert("そのマスは既に石が置かれています。");
+      }
+    }
+	
+	// 石を置けなくなったかどうかをチェックします
+    function isSkipTurn() {
+      for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+          if (boardArray[row][col] === 0) {
+            if (isValidMove(row, col)) {
+              return false; // まだ石を置くことができる場所がある場合は手番をスキップしない
+            }
+          }
+        }
+      }
+      return true; // 石を置くことができる場所がない場合は手番をスキップする
+    }
+	
+    // 石を置く処理
+    function placeStone(row, col) {
+      boardArray[row][col] = currentPlayer;
+    }
+
+   // 石を裏返す処理
+    function flipStones(row, col) {
+      const directions = [
+        [-1, -1], [-1, 0], [-1, 1],
+        [0, -1],           [0, 1],
+        [1, -1], [1, 0], [1, 1]
+      ];
+
+      for (const [dRow, dCol] of directions) {
+        let r = row + dRow;
+        let c = col + dCol;
+        let stonesToFlip = [];
+
+        while (isValidCell(r, c) && boardArray[r][c] === 3 - currentPlayer) {
+          stonesToFlip.push([r, c]);
+          r += dRow;
+          c += dCol;
+        }
+
+        if (isValidCell(r, c) && boardArray[r][c] === currentPlayer) {
+          for (const [flipRow, flipCol] of stonesToFlip) {
+            boardArray[flipRow][flipCol] = currentPlayer;
+          }
+        }
+      }
+    }
+
+    // ゲーム盤の指定したセルが有効な範囲内かをチェックします
+    function isValidCell(row, col) {
+      return row >= 0 && row < 8 && col >= 0 && col < 8;
+    }
+	
+	 // ヒントを表示します
+    function showHint() {
+      const hintCells = getHintCells();
+      const board = document.getElementById("board");
+
+      for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+          const cell = board.children[row * 8 + col];
+          cell.classList.remove("hint");
+          if (hintCells.includes(row * 8 + col)) {
+            cell.classList.add("hint");
+          }
+        }
+      }
+    }
+
+    // 石を置ける場所を取得します
+    function getHintCells() {
+      const hintCells = [];
+
+      for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+          if (boardArray[row][col] === 0) {
+            if (isValidMove(row, col)) {
+              hintCells.push(row * 8 + col);
+            }
+          }
+        }
+      }
+
+      return hintCells;
+    }
+	
+    // 指定したセルに石を置くことができるかをチェックします
+    function isValidMove(row, col) {
+      if (boardArray[row][col] !== 0) {
+        return false; // 既に石が置かれている場合は無効な手
+      }
+
+      // 8方向のうちいずれかの方向に相手の石を挟むことができるかをチェックします
+      const directions = [
+        [-1, -1], [-1, 0], [-1, 1],
+        [0, -1],           [0, 1],
+        [1, -1], [1, 0], [1, 1]
+      ];
+
+      for (const [dRow, dCol] of directions) {
+        let r = row + dRow;
+        let c = col + dCol;
+
+        // 1つ以上の相手の石を挟んだ場合、有効な手として認識します
+        let valid = false;
+        while (isValidCell(r, c) && boardArray[r][c] === 3 - currentPlayer) {
+          r += dRow;
+          c += dCol;
+          valid = true;
+        }
+
+        if (isValidCell(r, c) && boardArray[r][c] === currentPlayer && valid) {
+          return true;
+        }
+      }
+
+      return false;
+    }
+
+    // 手番を表示します
+    function updateTurnText() {
+      const turnText = document.getElementById("turn");
+      turnText.textContent = currentPlayer === 1 ? "黒の手番" : "白の手番";
+    }
+
+     function isGameFinished() {
+      // 石を置くことができる場所があるかをチェック
+      for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+          if (boardArray[row][col] === 0) {
+            if (isValidMove(row, col)) {
+              return false; // まだ石を置くことができる場所がある場合はゲーム続行
+            }
+          }
+        }
+      }
+      return true; // 石を置くことができる場所がない場合はゲーム終了
+    }
+
+      // 石の数を集計して表示します
+    function showResult() {
+      let blackCount = 0;
+      let whiteCount = 0;
+
+      for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+          if (boardArray[row][col] === 1) {
+            blackCount++;
+          } else if (boardArray[row][col] === 2) {
+            whiteCount++;
+          }
+        }
+      }
+
+      const resultText = document.getElementById("result");
+      if (blackCount > whiteCount) {
+        resultText.textContent = "黒の勝利！ 黒: " + blackCount + " 個、白: " + whiteCount + " 個";
+      } else if (blackCount < whiteCount) {
+        resultText.textContent = "白の勝利！ 黒: " + blackCount + " 個、白: " + whiteCount + " 個";
+      } else {
+        resultText.textContent = "引き分け！ 黒: " + blackCount + " 個、白: " + whiteCount + " 個";
+      }
+    }
+
+    // 初期手番の表示
+    updateTurnText();
+  </script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Othello</title>
+  <style>
+    .board {
+      display: grid;
+      grid-template-columns: repeat(8, 50px);
+      grid-template-rows: repeat(8, 50px);
+      gap: 1px;
+      background-color: #006400;
+    }
+
+    .cell {
+      background-color: #008000;
+      cursor: pointer;
+    }
+
+    .cell.empty {
+      background-color: #006400;
+    }
+
+    .cell.black {
+      background-color: #000;
+    }
+
+    .cell.white {
+      background-color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <div class="board">
+    <div class="cell empty"></div>
+    <!-- Repeat the empty cell div 63 more times -->
+  </div>
+
+  <script>
+    // JavaScript logic for the game will go here
+  </script>
+</body>
+</html>

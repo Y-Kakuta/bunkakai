@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>オセロゲーム</title>
+    <style>
+        .board {
+            width: 320px;
+            height: 320px;
+            border: 1px solid black;
+            display: grid;
+            grid-template-columns: repeat(8, 40px);
+            grid-template-rows: repeat(8, 40px);
+        }
+
+        .cell {
+            width: 40px;
+            height: 40px;
+            background-color: green;
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <div class="board" id="board">
+        <!-- 盤のセルを作成 -->
+    </div>
+
+    <script>
+        const boardElement = document.getElementById("board");
+        const board = [];
+        const player1Color = "black";
+        const player2Color = "white";
+        let currentPlayer = player1Color;
+
+        // 盤を初期化
+        function initializeBoard() {
+            for (let row = 0; row < 8; row++) {
+                const rowData = [];
+                for (let col = 0; col < 8; col++) {
+                    const cell = document.createElement("div");
+                    cell.classList.add("cell");
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    cell.addEventListener("click", handleCellClick);
+                    rowData.push(cell);
+                    boardElement.appendChild(cell);
+                }
+                board.push(rowData);
+            }
+            // 初期配置
+            placeDisk(3, 3, player1Color);
+            placeDisk(3, 4, player2Color);
+            placeDisk(4, 3, player2Color);
+            placeDisk(4, 4, player1Color);
+        }
+
+        // 石を置く
+        function placeDisk(row, col, color) {
+            const cell = board[row][col];
+            cell.style.backgroundColor = color;
+        }
+
+        // 石をひっくり返す
+        function flipDisks(row, col, color) {
+            const directions = [
+                { row: -1, col: -1 },
+                { row: -1, col: 0 },
+                { row: -1, col: 1 },
+                { row: 0, col: -1 },
+                { row: 0, col: 1 },
+                { row: 1, col: -1 },
+                { row: 1, col: 0 },
+                { row: 1, col: 1 },
+            ];
+
+            for (const dir of directions) {
+                const flipped = [];
+                let r = row + dir.row;
+                let c = col + dir.col;
+                while (r >= 0 && r < 8 && c >= 0 && c < 8) {
+                    const cell = board[r][c];
+                    if (cell.style.backgroundColor === color) {
+                        for (const flippedCell of flipped) {
+                            flippedCell.style.backgroundColor = color;
+                        }
+                        break;
+                    } else if (cell.style.backgroundColor === "green") {
+                        break;
+                    } else {
+                        flipped.push(cell);
+                    }
+                    r += dir.row;
+                    c += dir.col;
+                }
+            }
+        }
+
+        // セルクリック時の処理
+        function handleCellClick(event) {
+            const clickedCell = event.target;
+            const row = parseInt(clickedCell.dataset.row);
+            const col = parseInt(clickedCell.dataset.col);
+            // すでに石が置かれている場合は処理しない
+            if (board[row][col].style.backgroundColor !== "green") return;
+
+            const color = currentPlayer === player1Color ? player1Color : player2Color;
+            placeDisk(row, col, color);
+            flipDisks(row, col, color);
+
+            // 手番切り替え
+            currentPlayer = currentPlayer === player1Color ? player2Color : player1Color;
+
+            // ゲームの終了判定
+            if (!hasValidMoves()) {
+                const winner = getWinner();
+                if (winner) {
+                    alert(`ゲーム終了！ 勝者は${winner === player1Color ? 'プレイヤー1' : 'プレイヤー2'}です！`);
+                } else {
+                    alert('ゲーム終了！ 引き分けです！');
+                }
+            }
+        }
+
+        // 有効な手があるかどうかを判定
+        function hasValidMoves() {
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    if (board[row][col].style.backgroundColor === "green" && isValidMove(row, col, currentPlayer)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        // 特定のセルに石を置けるかどうかを判定
+        function isValidMove(row, col, color) {
+            const directions = [
+                { row: -1, col: -1 },
+                { row: -1, col: 0 },
+                { row: -1, col: 1 },
+                { row: 0, col: -1 },
+                { row: 0, col: 1 },
+                { row: 1, col: -1 },
+                { row: 1, col: 0 },
+                { row: 1, col: 1 },
+            ];
+
+            for (const dir of directions) {
+                let r = row + dir.row;
+                let c = col + dir.col;
+                let foundOpponent = false;
+                while (r >= 0 && r < 8 && c >= 0 && c < 8) {
+                    const cell = board[r][c];
+                    if (cell.style.backgroundColor === "green") {
+                        break;
+                    } else if (cell.style.backgroundColor === color) {
+                        if (foundOpponent) {
+                            return true;
+                        }
+                        break;
+                    } else {
+                        foundOpponent = true;
+                    }
+                    r += dir.row;
+                    c += dir.col;
+                }
+            }
+
+            return false;
+        }
+
+        // 勝者を取得
+        function getWinner() {
+            let player1Count = 0;
+            let player2Count = 0;
+
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    if (board[row][col].style.backgroundColor === player1Color) {
+                        player1Count++;
+                                        } else if (board[row][col].style.backgroundColor === player2Color) {
+                        player2Count++;
+                    }
+                }
+            }
+
+            if (player1Count > player2Count) {
+                return player1Color;
+            } else if (player2Count > player1Count) {
+                return player2Color;
+            } else {
+                return null; // 引き分けの場合
+            }
+        }
+
+        // ゲームの開始
+        function startGame() {
+            initializeBoard();
+            // ここにゲームの初期化処理などを追加する必要はありません。
+        }
+
+        startGame();
+    </script>
+</body>
+</html>
+
